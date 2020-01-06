@@ -1,0 +1,94 @@
+apiVersion: storage.k8s.io/v1beta1
+kind: StorageClass
+metadata:
+  name: scylla-ssd
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: dev-scylladb
+  labels:
+    app: scylladb
+    release: dev
+    heritage: Tiller
+spec:
+  selector:
+    matchLabels:
+      app: scylladb
+  serviceName: dev-scylladb
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: scylladb
+        release: dev
+    spec:
+      terminationGracePeriodSeconds: 120
+      containers:
+      - name: dev-scylladb
+        image: scylladb/scylla
+        resources: 
+          {}
+          
+        ports:
+          - containerPort: 9042
+          - containerPort: 7000
+          - containerPort: 7001
+          - containerPort: 7199
+          - containerPort: 10000
+          - containerPort: 9180
+          - containerPort: 9100
+          - containerPort: 9160
+        env:
+        - name: MY_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: MY_SERVICE_NAME
+          value: dev-scylladb
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        args:
+          - --seeds
+          - dev-scylladb-0.dev-scylladb.scylladb-system.svc.cluster.local
+          - --overprovisioned
+          - "1"
+          - --listen-address
+          - "0.0.0.0"
+          - --broadcast-address
+          - "$(POD_IP)"
+          - --broadcast-rpc-address
+          - "$(POD_IP)"
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/usr/bin/nodetool","decommission"]
+        readinessProbe:
+          exec:
+            command: ["/bin/sh", "-c", "exec", "/opt/ready-probe.sh"]
+          initialDelaySeconds: 15
+          timeoutSeconds: 5
+        volumeMounts:
+          - name: scylla-ready-probe
+            mountPath: /opt/ready-probe.sh
+          - name: datadir
+            mountPath: /var/lib/scylla
+      volumes:
+        - name: scylla-ready-probe
+          configMap:
+            name: scylla 
+  volumeClaimTemplates:
+    - metadata:
+        name: datadir
+      spec:
+        accessModes: 
+          - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: "1Gi"
+        storageClassName: "scylla-ssd"
+

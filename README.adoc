@@ -1,0 +1,46 @@
+= scylladb-helm-kustomize
+
+== Make manifest (helm template)
+
+[source, bash]
+----
+cd kustomize/base/helm/
+git clone https://github.com/scylladb/scylla-code-samples.git
+
+helm template \
+  --name dev \
+  --namespace scylladb-system \
+  scylla-code-samples/helm-chart-scylla > ../scylladb-cluster.yaml
+----
+
+== Create kubernetes cluster on Mac (kind)
+
+* Docker for Mac
+** Preferences...
+*** File Sharing
+**** Add `/private`
+
+[source, bash]
+----
+kind create cluster --name kind1 --config ./kind-config.yaml
+export KUBECONFIG="$(kind get kubeconfig-path --name="kind1")"
+----
+
+== Deploy scylladb cluster
+
+[source, bash]
+----
+kubectl create -k kustomize/overlays/local-kind
+----
+
+== Clean
+
+[source, bash]
+----
+kubectl delete -k kustomize/overlays/local-kind
+
+kind delete cluster --name kind1
+
+rm -fr /private/tmp/w1/* /private/tmp/w2/* /private/tmp/w3/*
+----
+

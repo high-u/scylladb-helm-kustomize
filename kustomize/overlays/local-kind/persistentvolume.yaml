@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: volume-dev-scylladb-0
+  labels:
+    type: local
+spec:
+  storageClassName: scylla-ssd
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/data/volume0"
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: volume-dev-scylladb-1
+  labels:
+    type: local
+spec:
+  storageClassName: scylla-ssd
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/data/volume1"

@@ -1,0 +1,34 @@
+kind: Cluster
+apiVersion: kind.sigs.k8s.io/v1alpha3
+nodes:
+- role: control-plane
+  extraMounts:
+  - hostPath: /private/tmp/m1
+    containerPath: /data
+- role: worker
+  extraPortMappings:
+  - containerPort: 30080
+    hostPort: 3080
+    listenAddress: "0.0.0.0"
+    protocol: tcp
+  extraMounts:
+  - hostPath: /private/tmp/w1
+    containerPath: /data
+- role: worker
+  extraPortMappings:
+  - containerPort: 30080
+    hostPort: 3081
+    listenAddress: "0.0.0.0"
+    protocol: tcp
+  extraMounts:
+  - hostPath: /private/tmp/w2
+    containerPath: /data
+- role: worker
+  extraPortMappings:
+  - containerPort: 30080
+    hostPort: 3082
+    listenAddress: "0.0.0.0"
+    protocol: tcp
+  extraMounts:
+  - hostPath: /private/tmp/w3
+    containerPath: /data

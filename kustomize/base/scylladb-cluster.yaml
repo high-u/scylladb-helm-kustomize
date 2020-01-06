@@ -1,0 +1,151 @@
+---
+# Source: scylladb/templates/scylla-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: scylla
+data:
+  ready-probe.sh: |
+    #!/bin/bash
+
+    if [[ $(nodetool status | grep $POD_IP) == *"UN"* ]]; then
+      if [[ $DEBUG ]]; then
+        echo "UN";
+      fi
+      exit 0;
+    else
+      if [[ $DEBUG ]]; then
+        echo "Not Up";
+      fi
+      exit 1;
+    fi
+
+---
+# Source: scylladb/templates/scylla-storageclass.yaml
+kind: StorageClass
+apiVersion: storage.k8s.io/v1beta1
+metadata:
+  name: scylla-ssd
+provisioner: kubernetes.io/gce-pd
+parameters:
+  type: pd-ssd
+  zone: us-central1-a
+
+---
+# Source: scylladb/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: dev-scylladb
+  labels:
+    app: scylladb
+    chart: scylladb-0.1.0
+    release: dev
+    heritage: Tiller
+spec:
+  clusterIP: None
+  ports:
+    - port: 9042
+      name: cql
+    - port: 7000
+      name: internode
+    - port: 7001
+      name: sslinternode
+    - port: 7199
+      name: jmx
+    - port: 10000
+      name: rest
+    - port: 9180
+      name: prometeus
+    - port: 9100
+      name: nodeexporter
+    - port: 9160
+      name: thrift
+
+  selector:
+    app: scylladb
+    release: dev
+
+---
+# Source: scylladb/templates/statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: dev-scylladb
+  labels:
+    app: scylladb
+    release: dev
+    heritage: Tiller
+spec:
+  selector:
+    matchLabels:
+      app: scylladb
+  serviceName: dev-scylladb
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: scylladb
+        release: dev
+    spec:
+      terminationGracePeriodSeconds: 120
+      containers:
+      - name: dev-scylladb
+        image: scylladb/scylla
+        resources: 
+          {}
+          
+        ports:
+          - containerPort: 9042
+          - containerPort: 7000
+          - containerPort: 7001
+          - containerPort: 7199
+          - containerPort: 10000
+          - containerPort: 9180
+          - containerPort: 9100
+          - containerPort: 9160
+        env:
+        - name: MY_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: MY_SERVICE_NAME
+          value: dev-scylladb
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        args:
+          - --seeds 
+          - dev-scylladb-0.dev-scylladb.default.svc.cluster.local
+          - --overprovisioned
+          - "1"
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/usr/bin/nodetool","decommission"]
+        readinessProbe:
+          exec:
+            command: ["/bin/sh", "-c", "exec", "/opt/ready-probe.sh"]
+          initialDelaySeconds: 15
+          timeoutSeconds: 5
+        volumeMounts:
+          - name: scylla-ready-probe
+            mountPath: /opt/ready-probe.sh
+          - name: datadir
+            mountPath: /var/lib/scylla
+      volumes:
+        - name: scylla-ready-probe
+          configMap:
+            name: scylla 
+  volumeClaimTemplates:
+    - metadata:
+        name: datadir
+      spec:
+        accessModes: 
+          - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: "15Gi"
+        storageClassName: "scylla-ssd"
+

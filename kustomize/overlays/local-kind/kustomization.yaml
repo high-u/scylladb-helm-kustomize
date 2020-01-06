@@ -1,0 +1,7 @@
+namespace: scylladb-system
+bases:
+- ../../base
+resources:
+- persistentvolume.yaml
+patchesStrategicMerge:
+- scylladb-cluster.yaml
