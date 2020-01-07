@@ -9,7 +9,7 @@ git clone https://github.com/scylladb/scylla-code-samples.git
 
 helm template \
   --name dev \
-  --namespace scylladb-system \
+  --namespace scylla-system \
   scylla-code-samples/helm-chart-scylla > ../scylladb-cluster.yaml
 ----
 

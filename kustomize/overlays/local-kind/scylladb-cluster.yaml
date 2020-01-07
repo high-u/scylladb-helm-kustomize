@@ -54,7 +54,7 @@ spec:
               fieldPath: status.podIP
         args:
           - --seeds
-          - dev-scylladb-0.dev-scylladb.scylladb-system.svc.cluster.local
+          - dev-scylladb-0.dev-scylladb.scylla-system.svc.cluster.local
           - --overprovisioned
           - "1"
           - --listen-address

@@ -1,4 +1,4 @@
-namespace: scylladb-system
+namespace: scylla-system
 resources:
 - namespace.yaml
 - scylladb-cluster.yaml

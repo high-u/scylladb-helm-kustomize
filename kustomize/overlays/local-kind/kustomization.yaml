@@ -1,4 +1,4 @@
-namespace: scylladb-system
+namespace: scylla-system
 bases:
 - ../../base
 resources:
